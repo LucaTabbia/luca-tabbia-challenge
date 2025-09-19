@@ -9,8 +9,8 @@ import { FilesModule } from '@/modules/files.module';
 import { Server } from 'node:http';
 
 interface UploadResponse {
-    success: boolean;
-    message: string;
+  success: boolean;
+  message: string;
 }
 
 jest.mock('@aws-sdk/client-s3');
