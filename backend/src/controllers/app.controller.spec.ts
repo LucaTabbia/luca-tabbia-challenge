@@ -11,6 +11,7 @@ jest.mock('../utils/mapper/mapper');
 describe('AppController', () => {
   let appController: AppController;
   let appService: Mocked<IAppService>;
+  let mapDataSpy: jest.SpyInstance;
 
   beforeAll(async () => {
     const { unit, unitRef } = await TestBed.solitary(AppController).compile();
@@ -18,7 +19,9 @@ describe('AppController', () => {
     appController = unit;
     appService = unitRef.get(AppService);
 
-    jest.spyOn(Mapper, 'mapData').mockImplementation();
+    mapDataSpy = jest
+      .spyOn(Mapper, 'mapData')
+      .mockImplementation((_cls, data) => data);
   });
 
   describe('getHello', () => {
@@ -35,10 +38,7 @@ describe('AppController', () => {
 
       appController.getHello();
 
-      expect(Mapper.mapData).toHaveBeenCalledWith(
-        MessageDto,
-        resultFromService,
-      );
+      expect(mapDataSpy).toHaveBeenCalledWith(MessageDto, resultFromService);
     });
 
     it('should return the value from the mapper', () => {

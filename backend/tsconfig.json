@@ -10,6 +10,11 @@
     "allowSyntheticDefaultImports": true,
     "noUncheckedIndexedAccess": true,
     "target": "ES2023",
+    "types": [
+      "node",
+      "express",
+      "multer"
+    ],
     "sourceMap": true,
     "outDir": "./dist",
     "baseUrl": "./",
