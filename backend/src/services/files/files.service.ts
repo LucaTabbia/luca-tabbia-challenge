@@ -5,12 +5,13 @@ import {
   PutObjectCommand,
   GetObjectCommand,
 } from '@aws-sdk/client-s3';
-import { Readable } from 'node:stream';
 import {
   FileResponseEntity,
   IFileResponseEntity,
 } from '@/entities/file-response.entity';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { v4 as uuidv4 } from 'uuid';
+import { UploadRequestDto } from '@/dtos/upload-request.dto';
 
 @Injectable()
 export class FilesService {
@@ -30,22 +31,22 @@ export class FilesService {
     });
   }
 
-  async uploadFile(file: Express.Multer.File): Promise<IFileResponseEntity> {
-    const key = `${uuidv4()}-${file.originalname}`;
+  async getUploadSignedUrl(fileInfo: UploadRequestDto): Promise<IFileResponseEntity> {
+    const key = `${uuidv4()}-${fileInfo.filename}`;
 
     const command = new PutObjectCommand({
       Bucket: this.bucketName,
       Key: key,
-      Body: file.buffer,
-      ContentType: 'application/octet-stream',
+      ContentType: fileInfo.contentType,
     });
 
     try {
-      await this.s3Client.send(command);
+      let url = await getSignedUrl(this.s3Client, command, { expiresIn: 300 });
       return new FileResponseEntity({
         success: true,
-        message: 'File uploaded successfully',
-        key: key,
+        message: 'Retrieved file url successfully',
+        url: url,
+        key: key
       });
     } catch (error) {
       let message = 'Unknown error';
@@ -53,36 +54,39 @@ export class FilesService {
         message = error.message;
       }
       throw new HttpException(
-        'File upload failed: ' + message,
+        'Get signed url failed: ' + message,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+
   }
 
-  async downloadFile(
+  async getDownloadFileUrl(
     key: string,
-  ): Promise<{ stream: Readable; contentType: string }> {
+  ): Promise<IFileResponseEntity> {
     const command = new GetObjectCommand({
       Bucket: this.bucketName,
       Key: key,
     });
 
     try {
-      const response = await this.s3Client.send(command);
-
-      const stream = response.Body as Readable;
-      const contentType = response.ContentType || 'application/octet-stream';
-
-      return { stream, contentType };
+      let url = await getSignedUrl(this.s3Client, command, { expiresIn: 300 });
+      return new FileResponseEntity({
+        success: true,
+        message: 'Retrieved file url successfully',
+        url: url,
+        key: key
+      });
     } catch (error) {
       let message = 'Unknown error';
       if (error instanceof Error) {
         message = error.message;
       }
       throw new HttpException(
-        'File download failed: ' + message,
+        'Get signed url failed: ' + message,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
 }
+

@@ -5,24 +5,9 @@ import { FileResponseDto } from '@/dtos/file-response.dto';
 import { Mapper } from '@/utils/mapper/mapper';
 import { FileResponseEntity } from '@/entities/file-response.entity';
 import { HttpException } from '@nestjs/common';
-import { Readable, Writable } from 'stream';
-import type { Response } from 'express';
+import { UploadRequestDto } from '@/dtos/upload-request.dto';
+import { BadRequestException } from '@nestjs/common';
 
-class MockWritable extends Writable {
-  private _data = '';
-  set = jest.fn().mockReturnThis();
-  status = jest.fn().mockReturnThis();
-  send = jest.fn();
-
-  _write(chunk: Buffer | string, _encoding: string, callback: () => void) {
-    this._data += chunk.toString();
-    callback();
-  }
-
-  getData() {
-    return this._data;
-  }
-}
 
 describe('FilesController', () => {
   let controller: FilesController;
@@ -30,8 +15,8 @@ describe('FilesController', () => {
   let mapDataSpy: jest.SpyInstance;
 
   const mockFilesService: Partial<jest.Mocked<FilesService>> = {
-    uploadFile: jest.fn(),
-    downloadFile: jest.fn(),
+    getUploadSignedUrl: jest.fn(),
+    getDownloadFileUrl: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -48,35 +33,28 @@ describe('FilesController', () => {
       .mockImplementation((_cls, data) => data);
   });
 
-  describe('uploadFile', () => {
-    it('should return success response when file is uploaded', async () => {
-      const key = 'uuid-file.txt';
-      const mockFile: Express.Multer.File = {
-        originalname: 'file.txt',
-        buffer: Buffer.from('test'),
-        mimetype: 'text/plain',
-        size: 4,
-        fieldname: 'file',
-        encoding: '7bit',
-        destination: '',
-        filename: '',
-        path: '',
-        stream: null as unknown as Readable,
-      };
+  describe('getUploadSignedUrl', () => {
+    it('should return success response when upload url is retrieved', async () => {
+      const key = "uuid-file.txt"
+      const body = new UploadRequestDto(
+        'file.txt',
+        'text/plain'
+      )
 
       const resultFromService = new FileResponseEntity({
         success: true,
-        message: 'File uploaded successfully',
-        key,
+        message: 'Retrieved file url successfully',
+        key: "uuid-file.txt",
+        url: "example.url"
       });
 
-      filesService.uploadFile.mockResolvedValue(resultFromService);
+      filesService.getUploadSignedUrl.mockResolvedValue(resultFromService);
 
-      const uploadMock = jest.spyOn(filesService, 'uploadFile');
+      const uploadMock = jest.spyOn(filesService, 'getUploadSignedUrl');
 
-      const result = await controller.uploadFile(mockFile);
+      const result = await controller.getUploadSignedUrl(body);
 
-      expect(uploadMock).toHaveBeenCalledWith(mockFile);
+      expect(uploadMock).toHaveBeenCalledWith(body);
       expect(mapDataSpy).toHaveBeenCalledWith(
         FileResponseDto,
         resultFromService,
@@ -86,83 +64,82 @@ describe('FilesController', () => {
       expect(result.key).toBe(key);
     });
 
-    it('should throw an error when upload fails', async () => {
-      const mockFile: Express.Multer.File = {
-        originalname: 'file.txt',
-        buffer: Buffer.from('test'),
-        mimetype: 'text/plain',
-        size: 4,
-        fieldname: 'file',
-        encoding: '7bit',
-        destination: '',
-        filename: '',
-        path: '',
-        stream: null as unknown as Readable,
-      };
+    it('should throw an error when fails to retrieve url', async () => {
+      const body = new UploadRequestDto(
+        'file.txt',
+        'text/plain'
+      )
 
-      filesService.uploadFile.mockRejectedValueOnce(
-        new HttpException('File upload failed: File not found', 500),
+      filesService.getUploadSignedUrl.mockRejectedValueOnce(
+        new HttpException('Get signed url failed: File not found', 500),
       );
 
-      const uploadMock = jest.spyOn(filesService, 'uploadFile');
+      const uploadMock = jest.spyOn(filesService, 'getUploadSignedUrl');
 
-      await expect(controller.uploadFile(mockFile)).rejects.toThrow(
-        'File upload failed: File not found',
+      await expect(controller.getUploadSignedUrl(body)).rejects.toThrow(
+        'Get signed url failed: File not found',
+      );
+      expect(uploadMock).toHaveBeenCalledWith(body);
+    });
+
+    it('should throw an error when for an unsupported file type', async () => {
+      const body = new UploadRequestDto(
+        'file.txt',
+        'text/plain'
+      )
+
+      filesService.getUploadSignedUrl.mockRejectedValueOnce(
+        new BadRequestException('The file type is not supported'),
       );
 
-      expect(uploadMock).toHaveBeenCalledWith(mockFile);
+      const uploadMock = jest.spyOn(filesService, 'getUploadSignedUrl');
+
+      await expect(controller.getUploadSignedUrl(body)).rejects.toThrow(
+        'The file type is not supported',
+      );
+      expect(uploadMock).toHaveBeenCalledWith(body);
     });
   });
 
-  describe('downloadFile', () => {
-    it('should return a stream for the requested file', async () => {
-      const key = 'uuid-file.txt';
-      const stream = new Readable({
-        read() {},
+  describe('getDownloadFileUrl', () => {
+    it('should return success response when download url is retrieved', async () => {
+      const key = "uuid-file.txt"
+
+      const resultFromService = new FileResponseEntity({
+        success: true,
+        message: 'Retrieved file url successfully',
+        key: "uuid-file.txt",
+        url: "example.url"
       });
 
-      const res = new MockWritable() as unknown as Response;
-      stream.push('content');
-      stream.push(null);
-      const pipeSpy = jest.spyOn(stream, 'pipe');
+      filesService.getDownloadFileUrl.mockResolvedValue(resultFromService);
 
-      filesService.downloadFile.mockResolvedValue({
-        stream,
-        contentType: 'text/plain',
-      });
+      const downloadMock = jest.spyOn(filesService, 'getDownloadFileUrl');
 
-      const downloadMock = jest.spyOn(filesService, 'downloadFile');
-      const setSpy = jest.spyOn(res, 'set');
-
-      await controller.downloadFile(key, res);
+      const result = await controller.getDownloadFileUrl(key);
 
       expect(downloadMock).toHaveBeenCalledWith(key);
-      expect(setSpy).toHaveBeenCalledWith({
-        'Content-Type': 'text/plain',
-        'Content-Disposition': `attachment; filename="${key}"`,
-      });
-      expect(pipeSpy).toHaveBeenCalledWith(res);
-    });
-
-    it('should throw an HttpException when download fails', async () => {
-      const key = 'nonexistent-file.txt';
-
-      const res: Partial<Response> = {
-        set: jest.fn().mockReturnThis(),
-        status: jest.fn().mockReturnThis(),
-        send: jest.fn(),
-      };
-
-      filesService.downloadFile.mockRejectedValueOnce(
-        new HttpException('File download failed: File not found', 500),
+      expect(mapDataSpy).toHaveBeenCalledWith(
+        FileResponseDto,
+        resultFromService,
       );
 
-      const downloadMock = jest.spyOn(filesService, 'downloadFile');
+      expect(result.success).toBe(true);
+      expect(result.key).toBe(key);
+    });
 
-      await expect(
-        controller.downloadFile(key, res as Response),
-      ).rejects.toThrow('File download failed: File not found');
+    it('should throw an error when fails to retrieve url', async () => {
+      const key = "uuid-file.txt"
 
+      filesService.getDownloadFileUrl.mockRejectedValueOnce(
+        new HttpException('Get signed url failed: File not found', 500),
+      );
+
+      const downloadMock = jest.spyOn(filesService, 'getDownloadFileUrl');
+
+      await expect(controller.getDownloadFileUrl(key)).rejects.toThrow(
+        'Get signed url failed: File not found',
+      );
       expect(downloadMock).toHaveBeenCalledWith(key);
     });
   });
