@@ -1,11 +1,12 @@
-import { useEffect, useState } from "react";
+import { ReactNode, useState } from "react";
 import { FileService } from "../../services/file.service";
 import { UploadResponse } from "../../models/upload-response.model";
-import { Box, Button, Fade, Stack, Typography } from "@mui/material";
+import { Box, Button, CircularProgress, Stack, Typography } from "@mui/material";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import ErrorMessage from "../../components/ErrorMessage/ErrorMessage";
 import SelectedFileChip from "../../components/SelectedFileChip/SelectedFileChip";
 import * as styles from "./FileSection.styles";
+import { SectionStatus } from "../../constants/section-status.enum";
 
 
 
@@ -16,27 +17,21 @@ export default function FileSection({
 }) {
     const [file, setFile] = useState<File | undefined>(undefined);
     const [result, setResult] = useState<UploadResponse | undefined>(undefined);
-    const [showSuccess, setShowSuccess] = useState<boolean>(false);
-    const [showDownload, setShowDownload] = useState<boolean>(false);
-    const [error, setError] = useState<string | undefined>(undefined);
+    const [sectionStatus, setSectionStatus] = useState<SectionStatus>(SectionStatus.init);
+    let content: ReactNode;
 
-    useEffect(() => {
-        if (!showSuccess && result) {
-            setTimeout(() => {
-                setShowDownload(true);
-            }, 500);
-        }
-    }, [showSuccess])
+    const [error, setError] = useState<string | undefined>(undefined);
 
 
     async function uploadFileToS3(file: File) {
+        setSectionStatus(SectionStatus.loading)
         try {
             const response = await service.uploadFile(file)
             if (response) {
-                setShowSuccess(true);
+                setSectionStatus(SectionStatus.success)
                 setResult(response)
                 setTimeout(() => {
-                    setShowSuccess(false);
+                    setSectionStatus(SectionStatus.init);
                 }, 2000);
             }
         } catch (err) {
@@ -46,12 +41,15 @@ export default function FileSection({
             }
             console.error("Upload failed", err);
             setError(message)
+            setSectionStatus(SectionStatus.error)
         }
     }
 
     async function downloadFileFromS3(key: string, filename?: string) {
+        setSectionStatus(SectionStatus.loading)
         try {
             await service.downloadFile(key, filename);
+            setSectionStatus(SectionStatus.success)
         } catch (err) {
             let message = "Download failed: Unknown error";
             if (err instanceof Error) {
@@ -59,14 +57,17 @@ export default function FileSection({
             }
             console.error("Download failed", err);
             setError(message)
+            setSectionStatus(SectionStatus.error)
         }
     }
 
-    function resetFileState() {
+    function resetSectionState() {
         setFile(undefined);
         setResult(undefined);
-        setShowDownload(false);
         setError(undefined);
+        if (sectionStatus != SectionStatus.init) {
+            setSectionStatus(SectionStatus.init);
+        }
     }
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -82,10 +83,12 @@ export default function FileSection({
 
             if (selectedFile.size > maxFileSize) {
                 setError("The file is too big. Max file size supported is 5MB");
+                setSectionStatus(SectionStatus.error)
                 e.target.files = null;
                 return
             } else if (!allowedTypes.includes(selectedFile.type)) {
                 setError("The file type is not supported");
+                setSectionStatus(SectionStatus.error)
                 e.target.files = null;
                 return
             } else {
@@ -96,61 +99,57 @@ export default function FileSection({
         }
     };
 
-    return (
-        <Box sx={styles.boxContainer}>
-            {!error ? <Stack spacing={3} sx={styles.stackColumnCenter}>
-                <Button variant="contained" component="label">
-                    Select file
-                    <input type="file" hidden onChange={handleFileChange} data-testid="file-input" />
-                </Button>
-
-                {file && (
-                    <SelectedFileChip file={file} onDelete={() => resetFileState()} />
-                )}
-                <Stack spacing={2} sx={styles.stackRowCenter}>
-                    {!showSuccess && !showDownload && file && !result && (
-                        <Button variant="contained" color="primary" onClick={() => uploadFileToS3(file)}>
-                            Upload
-                        </Button>
-                    )}
-
-                    {showDownload && result && result.success && (
-                        <Button
-                            variant="contained"
-                            color="primary"
-                            onClick={() => downloadFileFromS3(result.key, file?.name)}
-                        >
-                            Download
-                        </Button>
-                    )}
-
-                    <Fade in={showSuccess} timeout={500} unmountOnExit>
-                        {result ? (
-                            <Stack spacing={2} sx={styles.stackRowCenter}>
-                                <CheckCircleOutlineIcon
-                                    color="success"
-                                    sx={{
-                                        fontSize: 60,
-                                        transform: showSuccess ? "scale(1)" : "scale(0.5)",
-                                        transition: "transform 0.5s ease-in-out",
-                                    }}
-                                />
-                                <Typography
-                                    variant="body1"
-                                    sx={{
-                                        opacity: showSuccess ? 1 : 0,
-                                        transition: "opacity 0.5s ease-in-out",
-                                    }}
-                                >
-                                    {result.message}
-                                </Typography>
-                            </Stack>
-                        ) : <></>}
-                    </Fade>
+    switch (sectionStatus) {
+        case SectionStatus.error:
+            content = error ? <ErrorMessage error={error} onClick={resetSectionState} /> : null;
+            break;
+        case SectionStatus.success:
+            content = result ? (
+                <Stack spacing={2} sx={styles.stackColumnCenter}>
+                    <CheckCircleOutlineIcon color="success" sx={{ fontSize: 60 }} />
+                    <Typography variant="body1">{result.message}</Typography>
                 </Stack>
-            </Stack> : <ErrorMessage error={error} onClick={() => resetFileState()} />}
+            ) : null;
+            break;
+        case SectionStatus.loading:
+            content = (
+                <Stack spacing={2} sx={styles.stackColumnCenter}>
+                    <CircularProgress size={60} />
+                    <Typography variant="body1">Caricamento...</Typography>
+                </Stack>
+            );
+            break;
+        case SectionStatus.init:
+        default:
+            content = (
+                <Stack spacing={3} sx={styles.stackColumnCenter}>
+                    <Button variant="contained" component="label">
+                        Select file
+                        <input type="file" hidden onChange={handleFileChange} data-testid="file-input" />
+                    </Button>
+                    {file && <SelectedFileChip file={file} onDelete={resetSectionState} />}
+                    <Stack spacing={2} sx={styles.stackRowCenter}>
+                        {file && !result && (
+                            <Button variant="contained" color="primary" onClick={() => uploadFileToS3(file)}>
+                                Upload
+                            </Button>
+                        )}
+                        {result && result.success && (
+                            <Button
+                                variant="contained"
+                                color="primary"
+                                onClick={() => downloadFileFromS3(result.key, file?.name)}
+                            >
+                                Download
+                            </Button>
+                        )}
+                    </Stack>
+                </Stack>
+            );
+    }
 
-
-        </Box>
+    return (
+        <Box sx={styles.boxContainer}>{content}</Box >
     );
 }
+
