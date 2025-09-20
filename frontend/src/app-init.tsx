@@ -21,10 +21,16 @@ import Grid from "@mui/material/Grid";
 import theme from "./theme";
 import { useMemo } from "react";
 import { ExampleService } from "./services/example.service";
+import FileSection from "./sections/FileSection/FileSection";
+import { FileService } from "./services/file.service";
 
 function App() {
   const exampleService = useMemo(function initExampleService() {
     return new ExampleService();
+  }, []);
+
+  const fileService = useMemo(function initFileService() {
+    return new FileService();
   }, []);
 
   return (
@@ -59,19 +65,13 @@ function App() {
                 <Card>
                   <CardContent>
                     <Typography variant="h5" component="div">
-                      Funzionalità 1
+                      Carica e scarica un file
                     </Typography>
                     <Typography sx={{ mb: 1.5 }} color="text.secondary">
-                      Descrizione della prima funzionalità
+                      Un utente può caricare un file su S3, se il caricamento va a buon fine l'utente può riscaricare il file.
                     </Typography>
-                    <Typography variant="body2">
-                      Qui puoi aggiungere la tua prima funzionalità. Material-UI
-                      è ora configurato e funzionante.
-                    </Typography>
+                    <FileSection service={fileService} />
                   </CardContent>
-                  <CardActions>
-                    <Button size="small">Scopri di più</Button>
-                  </CardActions>
                 </Card>
               </Grid>
 
@@ -117,6 +117,7 @@ function App() {
                     <br />
                     ✅ Layout responsivo
                     <br />✅ Componenti base implementati
+                    <br />✅ Requisiti minimi: upload di un file che, se va a buon fine, mostra conferma e poi ti permette di scaricarlo
                   </Typography>
                 </Paper>
               </Grid>
