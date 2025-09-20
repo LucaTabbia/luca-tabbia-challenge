@@ -18,7 +18,7 @@ export default function FileSection({
     const [result, setResult] = useState<UploadResponse | undefined>(undefined);
     const [showSuccess, setShowSuccess] = useState<boolean>(false);
     const [showDownload, setShowDownload] = useState<boolean>(false);
-    const [serviceError, setServiceError] = useState<string | undefined>(undefined);
+    const [error, setError] = useState<string | undefined>(undefined);
 
     useEffect(() => {
         if (!showSuccess && result) {
@@ -45,7 +45,7 @@ export default function FileSection({
                 message = err.message;
             }
             console.error("Upload failed", err);
-            setServiceError(message)
+            setError(message)
         }
     }
 
@@ -58,7 +58,7 @@ export default function FileSection({
                 message = err.message;
             }
             console.error("Download failed", err);
-            setServiceError(message)
+            setError(message)
         }
     }
 
@@ -66,18 +66,39 @@ export default function FileSection({
         setFile(undefined);
         setResult(undefined);
         setShowDownload(false);
-        setServiceError(undefined);
+        setError(undefined);
     }
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
-            setFile(e.target.files[0]);
+            const selectedFile = e.target.files[0];
+            const maxFileSize = 5 * 1024 * 1024;
+            const allowedTypes = [
+                "image/jpeg",
+                "image/png",
+                "application/pdf",
+                "text/plain",
+            ];
+
+            if (selectedFile.size > maxFileSize) {
+                setError("The file is too big. Max file size supported is 5MB");
+                e.target.files = null;
+                return
+            } else if (!allowedTypes.includes(selectedFile.type)) {
+                setError("The file type is not supported");
+                e.target.files = null;
+                return
+            } else {
+                setFile(selectedFile);
+                e.target.files = null;
+                return
+            }
         }
     };
 
     return (
         <Box sx={styles.boxContainer}>
-            {!serviceError ? <Stack spacing={3} sx={styles.stackColumnCenter}>
+            {!error ? <Stack spacing={3} sx={styles.stackColumnCenter}>
                 <Button variant="contained" component="label">
                     Select file
                     <input type="file" hidden onChange={handleFileChange} data-testid="file-input" />
@@ -127,7 +148,7 @@ export default function FileSection({
                         ) : <></>}
                     </Fade>
                 </Stack>
-            </Stack> : <ErrorMessage error={serviceError} onClick={() => resetFileState()} />}
+            </Stack> : <ErrorMessage error={error} onClick={() => resetFileState()} />}
 
 
         </Box>

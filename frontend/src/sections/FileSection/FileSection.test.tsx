@@ -226,6 +226,44 @@ describe('FileSection', () => {
         consoleErrorSpy.mockRestore();
     });
 
+    it('displays error message when selected file is too large', async () => {
+        const largeFile = new File(
+            [new Uint8Array(6 * 1024 * 1024)], // 6MB
+            "bigfile.pdf",
+            { type: "application/pdf" }
+        );
+
+
+        render(<FileSection service={mockFileService} />);
+
+        const input = screen.getByTestId("file-input") as HTMLInputElement;
+
+        await act(async () => {
+            fireEvent.change(input, { target: { files: [largeFile] } });
+        });
+
+        expect(
+            await screen.findByText("The file is too big. Max file size supported is 5MB")
+        ).toBeInTheDocument();
+    });
+
+    it('displays error message when selected file type is not supported', async () => {
+        const unsupportedFile = new File(['test content'], 'test-file.svg', { type: 'image/svg' });
+
+
+        render(<FileSection service={mockFileService} />);
+
+        const input = screen.getByTestId("file-input") as HTMLInputElement;
+
+        await act(async () => {
+            fireEvent.change(input, { target: { files: [unsupportedFile] } });
+        });
+
+        expect(
+            await screen.findByText("The file type is not supported")
+        ).toBeInTheDocument();
+    });
+
     it('displays error message when download fails', async () => {
         const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
 

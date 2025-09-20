@@ -68,7 +68,7 @@ function App() {
                       Carica e scarica un file
                     </Typography>
                     <Typography sx={{ mb: 1.5 }} color="text.secondary">
-                      Un utente può caricare un file su S3, se il caricamento va a buon fine l'utente può riscaricare il file.
+                      Un utente può caricare un file (.png, .txt, .pdf, .jpeg) su S3 con dimensione massima di 5MB; se il caricamento va a buon fine l'utente può riscaricare il file.
                     </Typography>
                     <FileSection service={fileService} />
                   </CardContent>
@@ -118,6 +118,7 @@ function App() {
                     ✅ Layout responsivo
                     <br />✅ Componenti base implementati
                     <br />✅ Requisiti minimi: upload di un file che, se va a buon fine, mostra conferma e poi ti permette di scaricarlo
+                    <br />✅ File validation: il file selezionato può avere dimensione massima 5MB ed essere di tipo: .jpeg, .png, .pdf o .txt
                   </Typography>
                 </Paper>
               </Grid>
