@@ -3,7 +3,7 @@ import {
   INestApplication,
   HttpStatus,
   BadRequestException,
-  ValidationPipe
+  ValidationPipe,
 } from '@nestjs/common';
 import request from 'supertest';
 import type { Response } from 'supertest';
@@ -44,7 +44,9 @@ describe('FilesController (E2E)', () => {
   });
 
   it('/files/upload (POST) should retrieve an upload url', async () => {
-    (getSignedUrl as jest.Mock).mockResolvedValue('https://fake-s3-url.com/upload');
+    (getSignedUrl as jest.Mock).mockResolvedValue(
+      'https://fake-s3-url.com/upload',
+    );
 
     return request(server)
       .post('/files/upload')
@@ -62,9 +64,7 @@ describe('FilesController (E2E)', () => {
   it('/files/upload (POST) should give an error for missing body', async () => {
     (getSignedUrl as jest.Mock).mockResolvedValueOnce({});
 
-    return request(server)
-      .post('/files/upload')
-      .expect(HttpStatus.BAD_REQUEST);
+    return request(server).post('/files/upload').expect(HttpStatus.BAD_REQUEST);
   });
 
   it('/files/upload (POST) should throw an error due to unsupported mimeType', async () => {
@@ -81,7 +81,9 @@ describe('FilesController (E2E)', () => {
   });
 
   it('/files/download (GET) should retrieve a download url', async () => {
-    (getSignedUrl as jest.Mock).mockResolvedValue('https://fake-s3-url.com/download');
+    (getSignedUrl as jest.Mock).mockResolvedValue(
+      'https://fake-s3-url.com/download',
+    );
 
     return request(server)
       .get('/files/download?key=fake-key')
@@ -96,10 +98,12 @@ describe('FilesController (E2E)', () => {
   });
 
   it('/files/download (GET) should return error if file not found', async () => {
-    (getSignedUrl as jest.Mock).mockRejectedValueOnce(new Error('File not found'));
+    (getSignedUrl as jest.Mock).mockRejectedValueOnce(
+      new Error('File not found'),
+    );
 
     return request(server)
       .get('/files/download?key=nonexistent.txt')
-      .expect(HttpStatus.INTERNAL_SERVER_ERROR)
+      .expect(HttpStatus.INTERNAL_SERVER_ERROR);
   });
 });

@@ -13,7 +13,7 @@ import { UploadRequestDto } from '@/dtos/upload-request.dto';
 
 @Controller('files')
 export class FilesController {
-  constructor(private filesService: FilesService) { }
+  constructor(private filesService: FilesService) {}
 
   @Post('upload')
   async getUploadSignedUrl(
@@ -36,7 +36,9 @@ export class FilesController {
   }
 
   @Get('download')
-  async getDownloadFileUrl(@Query('key') key: string): Promise<IFileResponseDto> {
+  async getDownloadFileUrl(
+    @Query('key') key: string,
+  ): Promise<IFileResponseDto> {
     const result = await this.filesService.getDownloadFileUrl(key);
     return Mapper.mapData(FileResponseDto, result);
   }

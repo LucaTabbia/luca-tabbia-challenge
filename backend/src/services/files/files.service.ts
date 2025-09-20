@@ -31,7 +31,9 @@ export class FilesService {
     });
   }
 
-  async getUploadSignedUrl(fileInfo: UploadRequestDto): Promise<IFileResponseEntity> {
+  async getUploadSignedUrl(
+    fileInfo: UploadRequestDto,
+  ): Promise<IFileResponseEntity> {
     const key = `${uuidv4()}-${fileInfo.filename}`;
 
     const command = new PutObjectCommand({
@@ -41,12 +43,14 @@ export class FilesService {
     });
 
     try {
-      let url = await getSignedUrl(this.s3Client, command, { expiresIn: 300 });
+      const url = await getSignedUrl(this.s3Client, command, {
+        expiresIn: 300,
+      });
       return new FileResponseEntity({
         success: true,
         message: 'Retrieved file url successfully',
         url: url,
-        key: key
+        key: key,
       });
     } catch (error) {
       let message = 'Unknown error';
@@ -58,24 +62,23 @@ export class FilesService {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
-
   }
 
-  async getDownloadFileUrl(
-    key: string,
-  ): Promise<IFileResponseEntity> {
+  async getDownloadFileUrl(key: string): Promise<IFileResponseEntity> {
     const command = new GetObjectCommand({
       Bucket: this.bucketName,
       Key: key,
     });
 
     try {
-      let url = await getSignedUrl(this.s3Client, command, { expiresIn: 300 });
+      const url = await getSignedUrl(this.s3Client, command, {
+        expiresIn: 300,
+      });
       return new FileResponseEntity({
         success: true,
         message: 'Retrieved file url successfully',
         url: url,
-        key: key
+        key: key,
       });
     } catch (error) {
       let message = 'Unknown error';
@@ -89,4 +92,3 @@ export class FilesService {
     }
   }
 }
-

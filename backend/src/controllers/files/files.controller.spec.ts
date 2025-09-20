@@ -8,7 +8,6 @@ import { HttpException } from '@nestjs/common';
 import { UploadRequestDto } from '@/dtos/upload-request.dto';
 import { BadRequestException } from '@nestjs/common';
 
-
 describe('FilesController', () => {
   let controller: FilesController;
   let filesService: jest.Mocked<FilesService>;
@@ -35,17 +34,14 @@ describe('FilesController', () => {
 
   describe('getUploadSignedUrl', () => {
     it('should return success response when upload url is retrieved', async () => {
-      const key = "uuid-file.txt"
-      const body = new UploadRequestDto(
-        'file.txt',
-        'text/plain'
-      )
+      const key = 'uuid-file.txt';
+      const body = new UploadRequestDto('file.txt', 'text/plain');
 
       const resultFromService = new FileResponseEntity({
         success: true,
         message: 'Retrieved file url successfully',
-        key: "uuid-file.txt",
-        url: "example.url"
+        key: 'uuid-file.txt',
+        url: 'example.url',
       });
 
       filesService.getUploadSignedUrl.mockResolvedValue(resultFromService);
@@ -65,10 +61,7 @@ describe('FilesController', () => {
     });
 
     it('should throw an error when fails to retrieve url', async () => {
-      const body = new UploadRequestDto(
-        'file.txt',
-        'text/plain'
-      )
+      const body = new UploadRequestDto('file.txt', 'text/plain');
 
       filesService.getUploadSignedUrl.mockRejectedValueOnce(
         new HttpException('Get signed url failed: File not found', 500),
@@ -83,10 +76,7 @@ describe('FilesController', () => {
     });
 
     it('should throw an error when for an unsupported file type', async () => {
-      const body = new UploadRequestDto(
-        'file.txt',
-        'text/plain'
-      )
+      const body = new UploadRequestDto('file.txt', 'text/plain');
 
       filesService.getUploadSignedUrl.mockRejectedValueOnce(
         new BadRequestException('The file type is not supported'),
@@ -103,13 +93,13 @@ describe('FilesController', () => {
 
   describe('getDownloadFileUrl', () => {
     it('should return success response when download url is retrieved', async () => {
-      const key = "uuid-file.txt"
+      const key = 'uuid-file.txt';
 
       const resultFromService = new FileResponseEntity({
         success: true,
         message: 'Retrieved file url successfully',
-        key: "uuid-file.txt",
-        url: "example.url"
+        key: 'uuid-file.txt',
+        url: 'example.url',
       });
 
       filesService.getDownloadFileUrl.mockResolvedValue(resultFromService);
@@ -129,7 +119,7 @@ describe('FilesController', () => {
     });
 
     it('should throw an error when fails to retrieve url', async () => {
-      const key = "uuid-file.txt"
+      const key = 'uuid-file.txt';
 
       filesService.getDownloadFileUrl.mockRejectedValueOnce(
         new HttpException('Get signed url failed: File not found', 500),
