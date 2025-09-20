@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Controller,
   Get,
   Post,
@@ -19,7 +20,27 @@ export class FilesController {
   constructor(private filesService: FilesService) {}
 
   @Post('upload')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 5 * 1024 * 1024 },
+      fileFilter: (_req, file, callback) => {
+        const allowedMimeTypes = [
+          'image/jpeg',
+          'image/png',
+          'application/pdf',
+          'text/plain',
+        ];
+        if (allowedMimeTypes.includes(file.mimetype)) {
+          callback(null, true);
+        } else {
+          callback(
+            new BadRequestException('The file type is not supported'),
+            false,
+          );
+        }
+      },
+    }),
+  )
   async uploadFile(
     @UploadedFile() file: Express.Multer.File,
   ): Promise<IFileResponseDto> {

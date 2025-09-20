@@ -1,5 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, HttpStatus } from '@nestjs/common';
+import {
+  INestApplication,
+  HttpStatus,
+  BadRequestException,
+  PayloadTooLargeException,
+} from '@nestjs/common';
 import request from 'supertest';
 import type { Response } from 'supertest';
 import { ConfigModule } from '@nestjs/config';
@@ -7,6 +12,7 @@ import { S3Client } from '@aws-sdk/client-s3';
 import { Readable } from 'node:stream';
 import { FilesModule } from '@/modules/files.module';
 import { Server } from 'node:http';
+import * as crypto from 'crypto';
 
 interface UploadResponse {
   success: boolean;
@@ -61,6 +67,40 @@ describe('FilesController (E2E)', () => {
         const body = res.body as UploadResponse;
         expect(body.success).toBe(true);
         expect(body.message).toContain('successfully');
+      });
+  });
+
+  it('/files/upload (POST) should give an error for missing file', async () => {
+    s3SendMock.mockResolvedValueOnce({});
+
+    return request(server)
+      .post('/files/upload')
+      .expect(HttpStatus.INTERNAL_SERVER_ERROR);
+  });
+
+  it('/files/upload (POST) should throw an error due to unsupported mimeType', async () => {
+    s3SendMock.mockResolvedValueOnce({});
+
+    return request(server)
+      .post('/files/upload')
+      .attach('file', Buffer.from('hello e2e'), 'test.exe')
+      .expect(HttpStatus.BAD_REQUEST)
+      .expect((res: Response) => {
+        const body = res.body as BadRequestException;
+        expect(body.message).toContain('The file type is not supported');
+      });
+  });
+
+  it('/files/upload (POST) should throw an error due to exceeding max file size', async () => {
+    s3SendMock.mockResolvedValueOnce({});
+    const largeBuffer = crypto.randomBytes(6 * 1024 * 1024);
+    return request(server)
+      .post('/files/upload')
+      .attach('file', largeBuffer, 'test.txt')
+      .expect(HttpStatus.PAYLOAD_TOO_LARGE)
+      .expect((res: Response) => {
+        const body = res.body as PayloadTooLargeException;
+        expect(body.message).toContain('File too large');
       });
   });
 
