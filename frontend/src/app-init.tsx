@@ -119,6 +119,7 @@ function App() {
                     <br />✅ Componenti base implementati
                     <br />✅ Requisiti minimi: upload di un file che, se va a buon fine, mostra conferma e poi ti permette di scaricarlo
                     <br />✅ File validation: il file selezionato può avere dimensione massima 5MB ed essere di tipo: .jpeg, .png, .pdf o .txt
+                    <br />✅ Signed url: il backend restituisce un signed url sia per download, sia per upload. Il frontend poi lo usa per caricare o scaricare il file
                   </Typography>
                 </Paper>
               </Grid>

@@ -2,7 +2,7 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import '@testing-library/jest-dom';
 import FileSection from './FileSection';
 import { FileService } from '../../services/file.service';
-import { UploadResponse } from '../../models/upload-response.model';
+import { FileResponse } from '../../models/upload-response.model';
 
 jest.mock('../../services/file.service');
 
@@ -39,7 +39,7 @@ jest.useFakeTimers();
 describe('FileSection', () => {
     let mockFileService: jest.Mocked<FileService>;
     let mockFile: File;
-    let mockUploadResponse: UploadResponse;
+    let mockUploadResponse: FileResponse;
 
     beforeEach(() => {
         jest.clearAllMocks();
@@ -55,6 +55,7 @@ describe('FileSection', () => {
             success: true,
             message: 'File uploaded successfully',
             key: 'test-file-key-123',
+            url: "example.url"
         };
     });
 
@@ -102,7 +103,29 @@ describe('FileSection', () => {
         await act(async () => fireEvent.click(screen.getByText('Upload')));
         await waitFor(() => {
             expect(screen.getByTestId('CheckCircleOutlineIcon')).toBeInTheDocument();
-            expect(screen.getByText('File uploaded successfully')).toBeInTheDocument();
+            expect(screen.getByText('File caricato con successo')).toBeInTheDocument();
+        });
+    });
+
+    it('shows success message and icon after successful download', async () => {
+        mockFileService.uploadFile.mockResolvedValue(mockUploadResponse);
+        mockFileService.downloadFile.mockResolvedValue(mockUploadResponse);
+        render(<FileSection service={mockFileService} />);
+        const fileInput = screen.getByTestId('file-input');
+        fireEvent.change(fileInput, { target: { files: [mockFile] } });
+        await act(async () => fireEvent.click(screen.getByText('Upload')));
+        await waitFor(() => {
+            expect(screen.getByTestId('CheckCircleOutlineIcon')).toBeInTheDocument();
+            expect(screen.getByText('File caricato con successo')).toBeInTheDocument();
+        });
+        act(() => {
+            jest.advanceTimersByTime(2000);
+        });
+        expect(screen.getByText('Download')).toBeInTheDocument();
+        await act(async () => fireEvent.click(screen.getByText('Download')));
+        await waitFor(() => {
+            expect(screen.getByTestId('CheckCircleOutlineIcon')).toBeInTheDocument();
+            expect(screen.getByText('File scaricato con successo')).toBeInTheDocument();
         });
     });
 
@@ -116,12 +139,33 @@ describe('FileSection', () => {
         });
     });
 
+    it('shows loading message after download button click', async () => {
+        mockFileService.uploadFile.mockResolvedValue(mockUploadResponse);
+        render(<FileSection service={mockFileService} />);
+        const fileInput = screen.getByTestId('file-input');
+        fireEvent.change(fileInput, { target: { files: [mockFile] } });
+        await act(async () => fireEvent.click(screen.getByText('Upload')));
+        await waitFor(() => {
+            expect(screen.getByTestId('CheckCircleOutlineIcon')).toBeInTheDocument();
+            expect(screen.getByText('File caricato con successo')).toBeInTheDocument();
+        });
+        act(() => {
+            jest.advanceTimersByTime(2000);
+        });
+        expect(screen.getByText('Download')).toBeInTheDocument();
+        await act(async () => fireEvent.click(screen.getByText('Download')));
+        await waitFor(() => {
+            expect(screen.getByText('Caricamento...')).toBeInTheDocument();
+        });
+    });
+
+
     it('shows download button after success resets', async () => {
         mockFileService.uploadFile.mockResolvedValue(mockUploadResponse);
         render(<FileSection service={mockFileService} />);
         fireEvent.change(screen.getByTestId('file-input'), { target: { files: [mockFile] } });
         await act(async () => fireEvent.click(screen.getByText('Upload')));
-        await waitFor(() => expect(screen.getByText('File uploaded successfully')).toBeInTheDocument());
+        await waitFor(() => expect(screen.getByText('File caricato con successo')).toBeInTheDocument());
         await act(async () => { jest.advanceTimersByTime(2500); });
         await waitFor(() => expect(screen.getByText('Download')).toBeInTheDocument());
     });

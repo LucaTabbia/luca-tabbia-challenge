@@ -1,6 +1,9 @@
 import { FileService } from "./file.service";
 
-const mockFetch = jest.fn();
+const mockFetch: jest.MockedFunction<typeof fetch> = jest.fn();
+
+jest.spyOn(document.body, "appendChild").mockImplementation((node) => node);
+jest.spyOn(document.body, "removeChild").mockImplementation((node) => node);
 const mockCreateObjectURL = jest.fn();
 const mockRevokeObjectURL = jest.fn();
 
@@ -8,13 +11,11 @@ describe("FileService", () => {
     let service: FileService;
 
     beforeAll(() => {
-        global.fetch = mockFetch as unknown as typeof fetch;
+        global.fetch = mockFetch;
         global.URL = {
             createObjectURL: mockCreateObjectURL,
             revokeObjectURL: mockRevokeObjectURL,
         } as unknown as typeof URL;
-
-        jest.spyOn(document.body, "appendChild").mockImplementation((node) => node);
     });
 
     beforeEach(() => {
@@ -22,30 +23,28 @@ describe("FileService", () => {
         jest.clearAllMocks();
     });
 
-    afterAll(() => {
-        jest.restoreAllMocks();
-    });
-
     describe("uploadFile", () => {
         const mockFile = new File(["test content"], "test.txt", { type: "text/plain" });
-        const mockResponse = { success: true, message: "File uploaded successfully", key: "123" };
 
         it("should successfully upload a file", async () => {
             mockFetch.mockResolvedValueOnce({
                 ok: true,
-                json: async () => mockResponse,
+                json: async () => ({
+                    success: true,
+                    message: 'File uploaded successfully',
+                    key: 'test-file-key-123',
+                    url: 'https://fake-s3-url.com/upload',
+                }),
             } as Response);
+
+            mockFetch.mockResolvedValueOnce({ ok: true } as Response);
 
             const result = await service.uploadFile(mockFile);
 
-            expect(mockFetch).toHaveBeenCalledWith("/api/files/upload", {
-                method: "POST",
-                credentials: "include",
-                headers: { "x-apollo-operation-name": "uploadFile" },
-                body: expect.any(FormData),
-            });
+            expect(result.key).toBe('test-file-key-123');
+            expect(result.url).toBe('https://fake-s3-url.com/upload');
 
-            expect(result).toEqual(mockResponse);
+            expect(mockFetch).toHaveBeenCalledTimes(2);
         });
 
         it("should throw an error on network failure", async () => {
@@ -61,7 +60,7 @@ describe("FileService", () => {
             } as Response);
 
             await expect(service.uploadFile(mockFile)).rejects.toThrow(
-                "Upload failed: Not Found"
+                "Failed to get upload url: Not Found"
             );
         });
     });
@@ -69,20 +68,28 @@ describe("FileService", () => {
     describe("downloadFile", () => {
         const mockKey = "456";
         const mockFilename = "downloaded-file.pdf";
-        const mockBlob = new Blob(["downloaded content"], { type: "application/pdf" });
-        const mockUrl = "blob:test/123";
+        const mockBlob = new Blob(["file content"], { type: "text/plain" });
+        const mockUrl = "https://fake-s3-url.com/download";
 
-        beforeEach(() => {
+        beforeAll(() => {
             jest.spyOn(document, "createElement").mockReturnValue({
                 href: "",
                 download: "",
                 click: jest.fn(),
                 remove: jest.fn(),
             } as unknown as HTMLAnchorElement);
+        })
+
+        beforeEach(() => {
             mockCreateObjectURL.mockReturnValue(mockUrl);
         });
 
         it("should successfully download a file and trigger the download", async () => {
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: async () => ({ url: mockUrl, key: mockKey }),
+            } as Response);
+
             mockFetch.mockResolvedValueOnce({
                 ok: true,
                 blob: async () => mockBlob,
@@ -100,9 +107,14 @@ describe("FileService", () => {
             expect(document.body.appendChild).toHaveBeenCalled();
             const createdElement = (document.createElement as jest.Mock).mock.results[0].value;
             expect(createdElement.download).toBe(mockFilename);
-            expect(createdElement.click).toHaveBeenCalledTimes(1);
-            expect(createdElement.remove).toHaveBeenCalledTimes(1);
             expect(mockRevokeObjectURL).toHaveBeenCalledWith(mockUrl);
+
+            expect(mockFetch).toHaveBeenCalledTimes(2);
+            expect(mockFetch).toHaveBeenNthCalledWith(1, `/api/files/download?key=${mockKey}`, {
+                method: "GET",
+                credentials: "include",
+            });
+            expect(mockFetch).toHaveBeenNthCalledWith(2, mockUrl);
         });
 
         it("should throw an error on network failure", async () => {
@@ -118,7 +130,7 @@ describe("FileService", () => {
             } as Response);
 
             await expect(service.downloadFile(mockKey)).rejects.toThrow(
-                "Download failed: Unauthorized"
+                "Failed to get download url: Unauthorized"
             );
         });
     });

@@ -1,6 +1,6 @@
 import { ReactNode, useState } from "react";
 import { FileService } from "../../services/file.service";
-import { UploadResponse } from "../../models/upload-response.model";
+import { FileResponse } from "../../models/upload-response.model";
 import { Box, Button, CircularProgress, Stack, Typography } from "@mui/material";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import ErrorMessage from "../../components/ErrorMessage/ErrorMessage";
@@ -16,7 +16,7 @@ export default function FileSection({
     service: FileService
 }) {
     const [file, setFile] = useState<File | undefined>(undefined);
-    const [result, setResult] = useState<UploadResponse | undefined>(undefined);
+    const [result, setResult] = useState<FileResponse | undefined>(undefined);
     const [sectionStatus, setSectionStatus] = useState<SectionStatus>(SectionStatus.init);
     let content: ReactNode;
 
@@ -28,6 +28,7 @@ export default function FileSection({
         try {
             const response = await service.uploadFile(file)
             if (response) {
+                response.message = "File caricato con successo"
                 setSectionStatus(SectionStatus.success)
                 setResult(response)
                 setTimeout(() => {
@@ -48,8 +49,15 @@ export default function FileSection({
     async function downloadFileFromS3(key: string, filename?: string) {
         setSectionStatus(SectionStatus.loading)
         try {
-            await service.downloadFile(key, filename);
-            setSectionStatus(SectionStatus.success)
+            const response = await service.downloadFile(key, filename);
+            if (response) {
+                response.message = "File scaricato con successo"
+                setSectionStatus(SectionStatus.success)
+                setResult(response)
+                setTimeout(() => {
+                    setSectionStatus(SectionStatus.init);
+                }, 2000);
+            }
         } catch (err) {
             let message = "Download failed: Unknown error";
             if (err instanceof Error) {
