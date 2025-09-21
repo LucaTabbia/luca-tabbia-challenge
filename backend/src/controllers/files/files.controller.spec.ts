@@ -12,6 +12,7 @@ import { FileInfoResponseDto } from '@/dtos/file-info-response.dto';
 import { CreateResponseEntity } from '@/entities/create-response.entity';
 import { CreateResponseDto } from '@/dtos/create-response.dto';
 import { FileInfoRequestDto } from '@/dtos/file-info-request.dto';
+import { FileInfoEntity } from '@/entities/file-info.entity';
 
 describe('FilesController', () => {
   let controller: FilesController;
@@ -196,6 +197,7 @@ describe('FilesController', () => {
       const resultFromService = new CreateResponseEntity({
         success: true,
         message: 'Created file info successfully',
+        fileInfo: {} as FileInfoEntity
       });
 
       filesService.createFileInfo.mockResolvedValue(resultFromService);
