@@ -1,11 +1,11 @@
 import { Expose } from 'class-transformer';
 
-export interface IUploadRequestDto {
+export interface ISignedUrlRequestDto {
   filename: string;
   contentType: string;
 }
 
-export class UploadRequestDto implements IUploadRequestDto {
+export class SignedUrlRequestDto implements ISignedUrlRequestDto {
   @Expose()
   filename: string;
 

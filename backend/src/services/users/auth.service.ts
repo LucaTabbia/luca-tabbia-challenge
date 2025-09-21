@@ -1,5 +1,5 @@
 import { AuthRequestDto } from '@/dtos/auth-request.dto';
-import { User } from '@/entities/user.entity';
+import { UserEntity } from '@/entities/user.entity';
 import {
   ConflictException,
   HttpException,
@@ -18,8 +18,8 @@ import {
 @Injectable()
 export class AuthService {
   constructor(
-    @InjectRepository(User)
-    private readonly userRepo: Repository<User>,
+    @InjectRepository(UserEntity)
+    private readonly userRepo: Repository<UserEntity>,
   ) {}
 
   async signUp(authRequest: AuthRequestDto): Promise<IAuthResponseEntity> {
@@ -30,10 +30,12 @@ export class AuthService {
       if (existing) throw new ConflictException('Email already in use');
 
       const hashed = await bcrypt.hash(authRequest.password, 10);
-      const user = this.userRepo.create({
-        email: authRequest.email,
-        password: hashed,
-      });
+      const user = this.userRepo.create(
+        new UserEntity({
+          email: authRequest.email,
+          password: hashed,
+        }),
+      );
       await this.userRepo.save(user);
 
       return new AuthResponseEntity({

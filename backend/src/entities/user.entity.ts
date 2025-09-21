@@ -1,13 +1,15 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
+import { FileInfoEntity } from './file-info.entity';
 
 export interface IUserEntity {
   id: string;
   email: string;
   password: string;
+  files?: FileInfoEntity[];
 }
 
-@Entity()
-export class User implements IUserEntity {
+@Entity('user')
+export class UserEntity implements IUserEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -17,9 +19,10 @@ export class User implements IUserEntity {
   @Column()
   password: string;
 
-  constructor(id: string, email: string, password: string) {
-    this.id = id;
-    this.email = email;
-    this.password = password;
+  @OneToMany(() => FileInfoEntity, (file) => file.user)
+  files?: FileInfoEntity[];
+
+  constructor(data: Partial<IUserEntity>) {
+    Object.assign(this, data);
   }
 }

@@ -11,7 +11,7 @@ import request from 'supertest';
 import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from '@/modules/auth.module';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { User } from '@/entities/user.entity';
+import { UserEntity } from '@/entities/user.entity';
 import * as bcrypt from 'bcrypt';
 import { Repository } from 'typeorm';
 import { App } from 'supertest/types';
@@ -29,13 +29,13 @@ describe('AuthController (E2E)', () => {
     findOneBy: jest.fn(),
     create: jest.fn(),
     save: jest.fn(),
-  } as unknown as jest.Mocked<Repository<User>>;
+  } as unknown as jest.Mocked<Repository<UserEntity>>;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [ConfigModule.forRoot({ isGlobal: true }), AuthModule],
     })
-      .overrideProvider(getRepositoryToken(User))
+      .overrideProvider(getRepositoryToken(UserEntity))
       .useValue(mockUserRepo)
       .compile();
 

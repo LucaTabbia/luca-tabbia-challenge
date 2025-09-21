@@ -1,5 +1,5 @@
 import { AuthService } from './auth.service';
-import { User } from '@/entities/user.entity';
+import { UserEntity } from '@/entities/user.entity';
 import { Repository } from 'typeorm';
 import {
   ConflictException,
@@ -17,9 +17,9 @@ jest.mock('bcrypt', () => ({
 
 describe('AuthService', () => {
   let service: AuthService;
-  let mockUserRepo: jest.Mocked<Repository<User>>;
+  let mockUserRepo: jest.Mocked<Repository<UserEntity>>;
 
-  const mockUser: User = {
+  const mockUser: UserEntity = {
     id: '1',
     email: 'test@test.com',
     password: 'hashed-secret',
@@ -36,7 +36,7 @@ describe('AuthService', () => {
       findOneBy: jest.fn(),
       create: jest.fn(),
       save: jest.fn(),
-    } as unknown as jest.Mocked<Repository<User>>;
+    } as unknown as jest.Mocked<Repository<UserEntity>>;
 
     service = new AuthService(mockUserRepo);
   });
@@ -71,7 +71,7 @@ describe('AuthService', () => {
         id: '1',
         email: 'test@test.com',
         password: 'hashed-other',
-      } as User;
+      } as UserEntity;
       mockUserRepo.findOne.mockResolvedValue(user);
 
       await expect(service.signIn(mockReq)).rejects.toThrow(

@@ -5,8 +5,9 @@ import { AppController } from './controllers/app.controller';
 import { AppService } from './services/app/app.service';
 import { FilesModule } from './modules/files.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { User } from './entities/user.entity';
+import { UserEntity } from './entities/user.entity';
 import { AuthModule } from './modules/auth.module';
+import { FileInfoEntity } from './entities/file-info.entity';
 
 @Module({
   imports: [
@@ -17,11 +18,11 @@ import { AuthModule } from './modules/auth.module';
       useFactory: (config: ConfigService) => ({
         type: 'postgres',
         url: config.get<string>('DATABASE_URL') || '',
-        entities: [User],
+        entities: [UserEntity, FileInfoEntity],
         synchronize: true,
       }),
     }),
-    TypeOrmModule.forFeature([User]),
+    TypeOrmModule.forFeature([UserEntity, FileInfoEntity]),
     FilesModule,
     AuthModule,
   ],
