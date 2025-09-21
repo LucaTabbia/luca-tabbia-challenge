@@ -18,6 +18,10 @@ describe('AppController (e2e)', () => {
     await app.init();
   });
 
+  afterAll(async () => {
+    await app.close();
+  });
+
   it(`${apiPath} (GET)`, async () => {
     const response = await request(app.getHttpServer())
       .get(apiPath)

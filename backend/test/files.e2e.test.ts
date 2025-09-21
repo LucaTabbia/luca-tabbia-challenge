@@ -61,7 +61,7 @@ describe('FilesController (E2E)', () => {
       });
   });
 
-  it('/files/upload (POST) should give an error for missing body', async () => {
+  it('/files/upload (POST) should throw an error due to missing body', async () => {
     (getSignedUrl as jest.Mock).mockResolvedValueOnce({});
 
     return request(server).post('/files/upload').expect(HttpStatus.BAD_REQUEST);
@@ -97,7 +97,7 @@ describe('FilesController (E2E)', () => {
       });
   });
 
-  it('/files/download (GET) should return error if file not found', async () => {
+  it('/files/download (GET) should throw error if file not found', async () => {
     (getSignedUrl as jest.Mock).mockRejectedValueOnce(
       new Error('File not found'),
     );

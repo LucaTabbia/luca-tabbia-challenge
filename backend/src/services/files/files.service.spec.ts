@@ -8,12 +8,6 @@ jest.mock('@aws-sdk/s3-request-presigner', () => ({
   getSignedUrl: jest.fn(),
 }));
 
-jest.mock('@/utils/mapper/mapper', () => ({
-  Mapper: {
-    mapData: jest.fn(<T>(_dto: new () => T, data: T): T => data),
-  },
-}));
-
 describe('FilesService', () => {
   let service: FilesService;
   let configService: ConfigService;
@@ -39,7 +33,7 @@ describe('FilesService', () => {
   });
 
   describe('getUploadSignedUrl', () => {
-    it('should retrive a signed url for upload and return a successful response', async () => {
+    it('should retrieve a signed url for upload and return a successful response', async () => {
       (getSignedUrl as jest.Mock).mockResolvedValue(
         'https://fake-s3-url.com/upload',
       );
@@ -66,7 +60,7 @@ describe('FilesService', () => {
   });
 
   describe('getDownloadFileUrl', () => {
-    it('should retrive a signed url for download and return a successful response', async () => {
+    it('should retrieve a signed url for download and return a successful response', async () => {
       (getSignedUrl as jest.Mock).mockResolvedValue(
         'https://fake-s3-url.com/download',
       );
