@@ -1,4 +1,5 @@
-import { SxProps, Theme } from "@mui/material";
+import { Theme } from "@emotion/react";
+import { SxProps } from "@mui/material";
 
 export const boxContainer: SxProps<Theme> = {
     p: 4,

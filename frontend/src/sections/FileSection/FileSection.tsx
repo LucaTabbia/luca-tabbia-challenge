@@ -2,18 +2,22 @@ import { ReactNode, useState } from "react";
 import { FileService } from "../../services/file.service";
 import { FileResponse } from "../../models/upload-response.model";
 import { Box, Button, CircularProgress, Stack, Typography } from "@mui/material";
-import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import ErrorMessage from "../../components/ErrorMessage/ErrorMessage";
 import SelectedFileChip from "../../components/SelectedFileChip/SelectedFileChip";
-import * as styles from "./FileSection.styles";
+import * as styles from "../../styles";
 import { SectionStatus } from "../../constants/section-status.enum";
+import SuccessMessage from "../../components/SuccessMessage/SuccessMessage";
+import { AuthStatus } from "../../constants/auth-status.enum";
+import UnauthenticatedMessage from "../../components/UnauthenticatedMessage/UnauthenticatedMessage";
 
 
 
 export default function FileSection({
-    service
+    service,
+    authStatus
 }: {
-    service: FileService
+    service: FileService,
+    authStatus: AuthStatus
 }) {
     const [file, setFile] = useState<File | undefined>(undefined);
     const [result, setResult] = useState<FileResponse | undefined>(undefined);
@@ -107,17 +111,14 @@ export default function FileSection({
         }
     };
 
+
+
     switch (sectionStatus) {
         case SectionStatus.error:
             content = error ? <ErrorMessage error={error} onClick={resetSectionState} /> : null;
             break;
         case SectionStatus.success:
-            content = result ? (
-                <Stack spacing={2} sx={styles.stackColumnCenter}>
-                    <CheckCircleOutlineIcon color="success" sx={{ fontSize: 60 }} />
-                    <Typography variant="body1">{result.message}</Typography>
-                </Stack>
-            ) : null;
+            content = result ? <SuccessMessage message={result.message} /> : null;
             break;
         case SectionStatus.loading:
             content = (
@@ -154,6 +155,11 @@ export default function FileSection({
                     </Stack>
                 </Stack>
             );
+            break;
+    }
+
+    if (authStatus != AuthStatus.authenticated) {
+        content = <UnauthenticatedMessage />;
     }
 
     return (
