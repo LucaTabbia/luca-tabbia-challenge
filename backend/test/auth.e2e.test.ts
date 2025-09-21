@@ -5,6 +5,7 @@ import {
   HttpStatus,
   UnauthorizedException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import request from 'supertest';
 import { ConfigModule } from '@nestjs/config';
@@ -59,7 +60,7 @@ describe('AuthController (E2E)', () => {
     password: bcrypt.hashSync('secret', 10),
   };
 
-  const authBody = new AuthRequestDto('wrong@example.com', 'secret');
+  const authBody = new AuthRequestDto('test@example.com', 'secret');
 
   it('/auth/signIn (POST) should sign in successfully', async () => {
     mockUserRepo.findOne.mockResolvedValue(validUser);
@@ -79,7 +80,7 @@ describe('AuthController (E2E)', () => {
     await request(server)
       .post('/auth/signIn')
       .send({})
-      .expect(HttpStatus.UNAUTHORIZED);
+      .expect(HttpStatus.BAD_REQUEST);
   });
 
   it('/auth/signIn (POST) should throw error for wrong email', async () => {
@@ -128,7 +129,7 @@ describe('AuthController (E2E)', () => {
     await request(server)
       .post('/auth/signUp')
       .send({})
-      .expect(HttpStatus.INTERNAL_SERVER_ERROR);
+      .expect(HttpStatus.BAD_REQUEST);
   });
 
   it('/auth/signUp (POST) should throw error for existing email', async () => {
@@ -142,5 +143,27 @@ describe('AuthController (E2E)', () => {
         const body = res.body as ConflictException;
         expect(body.message).toContain('Email already in use');
       });
+  });
+
+  it('should reject invalid email', async () => {
+    await request(server)
+      .post('/auth/signin')
+      .send({ email: 'invalid-email', password: 'validPass1' })
+      .expect(HttpStatus.BAD_REQUEST)
+      .expect((res: Response) => {
+        const body = res.body as BadRequestException;
+        expect(body.message).toContain('email must be an email');
+      });;;
+  });
+
+  it('should reject short password', async () => {
+    await request(server)
+      .post('/auth/signin')
+      .send(new AuthRequestDto('test@example.com', '123'))
+      .expect(HttpStatus.BAD_REQUEST)
+      .expect((res: Response) => {
+        const body = res.body as BadRequestException;
+        expect(body.message).toContain('password must be longer than or equal to 6 characters');
+      });;
   });
 });

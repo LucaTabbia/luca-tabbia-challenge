@@ -1,4 +1,5 @@
 import { Expose } from 'class-transformer';
+import { IsEmail, MinLength } from 'class-validator';
 
 export interface IAuthRequestDto {
   email: string;
@@ -6,9 +7,12 @@ export interface IAuthRequestDto {
 }
 
 export class AuthRequestDto implements IAuthRequestDto {
+
+  @IsEmail()
   @Expose()
   email: string;
 
+  @MinLength(6)
   @Expose()
   password: string;
 
