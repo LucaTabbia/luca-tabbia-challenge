@@ -119,7 +119,7 @@ export default function FileSection({
                 <Stack spacing={3} sx={styles.stackColumnCenter}>
                     <Button variant="contained" component="label">
                         Select file
-                        <input type="file" hidden onChange={handleFileChange} data-testid="file-input" />
+                        <input type="file" accept="image/jpeg,image/png,application/pdf,text/plain" hidden onChange={handleFileChange} data-testid="file-input" />
                     </Button>
                     {file && <SelectedFileChip file={file} onDelete={resetSectionState} />}
                     <Stack spacing={2} sx={styles.stackRowCenter}>
