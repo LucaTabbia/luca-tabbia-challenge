@@ -4,7 +4,7 @@ import { Expose, Type } from 'class-transformer';
 export interface ICreateResponseDto {
   message: string;
   success: boolean;
-  fileInfo: FileInfoEntity
+  fileInfo: FileInfoEntity;
 }
 
 export class CreateResponseDto implements ICreateResponseDto {
@@ -21,6 +21,6 @@ export class CreateResponseDto implements ICreateResponseDto {
   constructor(success: boolean, message: string, fileInfo: FileInfoEntity) {
     this.success = success;
     this.message = message;
-    this.fileInfo = fileInfo
+    this.fileInfo = fileInfo;
   }
 }

@@ -132,14 +132,13 @@ export class FilesService {
         }),
       );
 
-      let fileInfoEntity = await this.fileRepo.save(fileInfo);
+      const fileInfoEntity = await this.fileRepo.save(fileInfo);
 
       return new CreateResponseEntity({
         success: true,
         message: 'Created file info successfully',
-        fileInfo: fileInfoEntity
+        fileInfo: fileInfoEntity,
       });
-      
     } catch (error) {
       let message = 'Unknown error';
       if (error instanceof HttpException) {

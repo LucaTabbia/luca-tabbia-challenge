@@ -197,7 +197,7 @@ describe('FilesController', () => {
       const resultFromService = new CreateResponseEntity({
         success: true,
         message: 'Created file info successfully',
-        fileInfo: {} as FileInfoEntity
+        fileInfo: {} as FileInfoEntity,
       });
 
       filesService.createFileInfo.mockResolvedValue(resultFromService);

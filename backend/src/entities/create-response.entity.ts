@@ -4,7 +4,7 @@ import { FileInfoEntity } from './file-info.entity';
 export interface ICreateResponseEntity {
   message: string;
   success: boolean;
-  fileInfo: FileInfoEntity
+  fileInfo: FileInfoEntity;
 }
 
 export class CreateResponseEntity implements ICreateResponseEntity {
