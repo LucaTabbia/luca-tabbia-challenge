@@ -1,7 +1,6 @@
 import { ReactNode, useState } from "react";
 import { FileService } from "../../services/file.service";
-import { FileResponse } from "../../models/upload-response.model";
-import { Box, Button, CircularProgress, Stack, Typography } from "@mui/material";
+import { Box, Button, Stack } from "@mui/material";
 import ErrorMessage from "../../components/ErrorMessage/ErrorMessage";
 import SelectedFileChip from "../../components/SelectedFileChip/SelectedFileChip";
 import * as styles from "../../styles";
@@ -9,18 +8,26 @@ import { SectionStatus } from "../../constants/section-status.enum";
 import SuccessMessage from "../../components/SuccessMessage/SuccessMessage";
 import { AuthStatus } from "../../constants/auth-status.enum";
 import UnauthenticatedMessage from "../../components/UnauthenticatedMessage/UnauthenticatedMessage";
+import { AuthResponse } from "../../models/auth-response.model";
+import { CreateResponse } from "../../models/create-response.model";
+import { FileInfo } from "../../models/file-info.model";
+import Loader from "../../components/Loader/Loader";
 
 
 
 export default function FileSection({
     service,
-    authStatus
+    authStatus,
+    authResponse,
+    setUploadedFileInfo
 }: {
     service: FileService,
-    authStatus: AuthStatus
+    authStatus: AuthStatus,
+    authResponse: AuthResponse | undefined,
+    setUploadedFileInfo: React.Dispatch<React.SetStateAction<FileInfo | undefined>>
 }) {
     const [file, setFile] = useState<File | undefined>(undefined);
-    const [result, setResult] = useState<FileResponse | undefined>(undefined);
+    const [result, setResult] = useState<CreateResponse | undefined>(undefined);
     const [sectionStatus, setSectionStatus] = useState<SectionStatus>(SectionStatus.init);
     let content: ReactNode;
 
@@ -28,58 +35,41 @@ export default function FileSection({
 
 
     async function uploadFileToS3(file: File) {
-        setSectionStatus(SectionStatus.loading)
-        try {
-            const response = await service.uploadFile(file)
-            if (response) {
-                response.message = "File caricato con successo"
-                setSectionStatus(SectionStatus.success)
-                setResult(response)
-                setTimeout(() => {
-                    setSectionStatus(SectionStatus.init);
-                }, 2000);
+        if (authResponse) {
+            setSectionStatus(SectionStatus.loading)
+            try {
+                const response = await service.uploadFile(file, authResponse.id)
+                if (response) {
+                    response.message = "File caricato con successo"
+                    setSectionStatus(SectionStatus.success)
+                    setUploadedFileInfo(response.fileInfo)
+                    setResult(response)
+                    setTimeout(() => {
+                        setFile(undefined);
+                        setError(undefined);
+                        setSectionStatus(SectionStatus.init);
+                        setResult(undefined);
+                    }, 2000);
+                }
+            } catch (err) {
+                let message = "Upload failed: Unknown error";
+                if (err instanceof Error) {
+                    message = err.message;
+                }
+                console.error("Upload failed", err);
+                setError(message)
+                setSectionStatus(SectionStatus.error)
             }
-        } catch (err) {
-            let message = "Upload failed: Unknown error";
-            if (err instanceof Error) {
-                message = err.message;
-            }
-            console.error("Upload failed", err);
-            setError(message)
-            setSectionStatus(SectionStatus.error)
-        }
-    }
-
-    async function downloadFileFromS3(key: string, filename?: string) {
-        setSectionStatus(SectionStatus.loading)
-        try {
-            const response = await service.downloadFile(key, filename);
-            if (response) {
-                response.message = "File scaricato con successo"
-                setSectionStatus(SectionStatus.success)
-                setResult(response)
-                setTimeout(() => {
-                    setSectionStatus(SectionStatus.init);
-                }, 2000);
-            }
-        } catch (err) {
-            let message = "Download failed: Unknown error";
-            if (err instanceof Error) {
-                message = err.message;
-            }
-            console.error("Download failed", err);
-            setError(message)
-            setSectionStatus(SectionStatus.error)
         }
     }
 
     function resetSectionState() {
         setFile(undefined);
-        setResult(undefined);
         setError(undefined);
         if (sectionStatus != SectionStatus.init) {
             setSectionStatus(SectionStatus.init);
         }
+        setResult(undefined);
     }
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -121,12 +111,7 @@ export default function FileSection({
             content = result ? <SuccessMessage message={result.message} /> : null;
             break;
         case SectionStatus.loading:
-            content = (
-                <Stack spacing={2} sx={styles.stackColumnCenter}>
-                    <CircularProgress size={60} />
-                    <Typography variant="body1">Caricamento...</Typography>
-                </Stack>
-            );
+            content = <Loader />;
             break;
         case SectionStatus.init:
         default:
@@ -141,15 +126,6 @@ export default function FileSection({
                         {file && !result && (
                             <Button variant="contained" color="primary" onClick={() => uploadFileToS3(file)}>
                                 Upload
-                            </Button>
-                        )}
-                        {result && result.success && (
-                            <Button
-                                variant="contained"
-                                color="primary"
-                                onClick={() => downloadFileFromS3(result.key, file?.name)}
-                            >
-                                Download
                             </Button>
                         )}
                     </Stack>

@@ -5,7 +5,7 @@ export default function ErrorMessage({
     onClick,
     error
 }: {
-    onClick: () => void,
+    onClick: (() => void) | undefined,
     error: string
 }) {
 
@@ -15,9 +15,9 @@ export default function ErrorMessage({
             <Typography textAlign="center" sx={{ ml: 0.5, flexShrink: 0 }}>
                 {error}
             </Typography>
-            <Button variant="contained" color="primary" onClick={onClick}>
+            {onClick && <Button variant="contained" color="primary" onClick={onClick}>
                 Retry
-            </Button>
+            </Button>}
         </Stack>
     );
 }

@@ -8,6 +8,7 @@ export const boxContainer: SxProps<Theme> = {
     alignItems: "center",
     justifyContent: "center",
     width: "100%",
+    height: "20vh"
 };
 
 export const stackColumnCenter: SxProps<Theme> = {
@@ -17,5 +18,6 @@ export const stackColumnCenter: SxProps<Theme> = {
 
 export const stackRowCenter: SxProps<Theme> = {
     direction: "row",
+    justifyContent: "space-between",
     alignItems: "center",
 };

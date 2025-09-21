@@ -29,11 +29,14 @@ import { AuthService } from "./services/auth.service";
 import { AuthRequest } from "./models/auth-request.model";
 import { AuthResponse } from "./models/auth-response.model";
 import { AuthStatus } from "./constants/auth-status.enum";
+import FileInfoSection from "./sections/FileInfoSection/FileInfoSection";
+import { FileInfo } from "./models/file-info.model";
 
 function App() {
   const [openModal, setOpenModal] = useState<boolean>(false);
   const [authResult, setAuthResult] = useState<AuthResponse | undefined>(undefined);
   const [authError, setAuthError] = useState<string | undefined>(undefined);
+  const [uploadedFileInfo, setUploadedFileInfo] = useState<FileInfo | undefined>(undefined);
   const [authStatus, setAuthStatus] = useState<AuthStatus>(AuthStatus.unauthenticated);
 
   const exampleService = useMemo(function initExampleService() {
@@ -136,12 +139,12 @@ function App() {
                 <Card>
                   <CardContent>
                     <Typography variant="h5" component="div">
-                      Carica e scarica un file
+                      Carica un file
                     </Typography>
                     <Typography sx={{ mb: 1.5 }} color="text.secondary">
-                      Un utente può caricare un file (.png, .txt, .pdf, .jpeg) su S3 con dimensione massima di 5MB; se il caricamento va a buon fine l'utente può riscaricare il file.
+                      Un utente può caricare un file (.png, .txt, .pdf, .jpeg) su S3 con dimensione massima di 5MB.
                     </Typography>
-                    <FileSection service={fileService} authStatus={authStatus} />
+                    <FileSection service={fileService} authStatus={authStatus} authResponse={authResult} setUploadedFileInfo={setUploadedFileInfo} />
                   </CardContent>
                 </Card>
               </Grid>
@@ -150,15 +153,12 @@ function App() {
                 <Card>
                   <CardContent>
                     <Typography variant="h5" component="div">
-                      Funzionalità 2
+                      Guarda e scarica i tuoi file
                     </Typography>
                     <Typography sx={{ mb: 1.5 }} color="text.secondary">
-                      Descrizione della seconda funzionalità
+                      Un utente qua può trovare la sua lista di file e scaricare il file attraverso l'icona sulla card
                     </Typography>
-                    <Typography variant="body2">
-                      Qui puoi aggiungere la tua seconda funzionalità. Tutti i
-                      componenti Material-UI sono disponibili.
-                    </Typography>
+                    <FileInfoSection service={fileService} authStatus={authStatus} authResponse={authResult} uploadedFileInfo={uploadedFileInfo} setUploadedFileInfo={setUploadedFileInfo}/>
                   </CardContent>
                   <CardActions>
                     <Button
@@ -192,6 +192,7 @@ function App() {
                     <br />✅ File validation: il file selezionato può avere dimensione massima 5MB ed essere di tipo: .jpeg, .png, .pdf o .txt
                     <br />✅ Signed url: il backend restituisce un signed url sia per download, sia per upload. Il frontend poi lo usa per caricare o scaricare il file
                     <br />✅ Authorization: L'utente può registrarsi o effettuare il login. Le funzionalità sono bloccate fino all'autenticazione.
+                    <br />✅ File list: L'utente può vedere la propria lista di file. Cliccando sull'icona di download può scaricare il file.
                   </Typography>
                 </Paper>
               </Grid>

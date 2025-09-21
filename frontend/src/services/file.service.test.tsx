@@ -1,3 +1,6 @@
+import { CreateResponse } from "../models/create-response.model";
+import { FileInfoResponse } from "../models/file-info-response.model";
+import { FileInfo } from "../models/file-info.model";
 import { FileService } from "./file.service";
 
 const mockFetch: jest.MockedFunction<typeof fetch> = jest.fn();
@@ -21,48 +24,6 @@ describe("FileService", () => {
     beforeEach(() => {
         service = new FileService();
         jest.clearAllMocks();
-    });
-
-    describe("uploadFile", () => {
-        const mockFile = new File(["test content"], "test.txt", { type: "text/plain" });
-
-        it("should successfully upload a file", async () => {
-            mockFetch.mockResolvedValueOnce({
-                ok: true,
-                json: async () => ({
-                    success: true,
-                    message: 'File uploaded successfully',
-                    key: 'test-file-key-123',
-                    url: 'https://fake-s3-url.com/upload',
-                }),
-            } as Response);
-
-            mockFetch.mockResolvedValueOnce({ ok: true } as Response);
-
-            const result = await service.uploadFile(mockFile);
-
-            expect(result.key).toBe('test-file-key-123');
-            expect(result.url).toBe('https://fake-s3-url.com/upload');
-
-            expect(mockFetch).toHaveBeenCalledTimes(2);
-        });
-
-        it("should throw an error on network failure", async () => {
-            mockFetch.mockRejectedValueOnce(new Error("Network error"));
-
-            await expect(service.uploadFile(mockFile)).rejects.toThrow("Network error");
-        });
-
-        it("should throw an error on failed upload response", async () => {
-            mockFetch.mockResolvedValueOnce({
-                ok: false,
-                statusText: "Not Found",
-            } as Response);
-
-            await expect(service.uploadFile(mockFile)).rejects.toThrow(
-                "Failed to get upload url: Not Found"
-            );
-        });
     });
 
     describe("downloadFile", () => {
@@ -134,4 +95,135 @@ describe("FileService", () => {
             );
         });
     });
+
+
+    describe("uploadFile", () => {
+        const mockFile = new File(["test content"], "test.txt", { type: "text/plain" });
+        const userId = "user-uuid";
+
+        it("should successfully upload a file and create file info", async () => {
+            const uploadUrl = "https://fake-s3-url.com/upload";
+            const fileKey = "file-key-123";
+
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: async () => ({
+                    url: uploadUrl,
+                    key: fileKey,
+                }),
+            } as Response);
+
+            mockFetch.mockResolvedValueOnce({ ok: true } as Response);
+
+            const createResponse: CreateResponse = {
+                success: true,
+                message: "File created successfully",
+                fileInfo: {
+                    id: "file-uuid",
+                    key: fileKey,
+                    name: "test.txt",
+                    mimetype: "text/plain",
+                    size: mockFile.size,
+                    userId,
+                    createdAt: new Date(),
+                } as FileInfo,
+            };
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: async () => createResponse,
+            } as Response);
+
+            const result = await service.uploadFile(mockFile, userId);
+
+            expect(result).toEqual(createResponse);
+            expect(mockFetch).toHaveBeenCalledTimes(3);
+            expect(mockFetch).toHaveBeenNthCalledWith(1, "/api/files/upload", expect.any(Object));
+            expect(mockFetch).toHaveBeenNthCalledWith(2, uploadUrl, expect.any(Object));
+            expect(mockFetch).toHaveBeenNthCalledWith(3, "/api/files/create", expect.any(Object));
+        });
+
+        it("should throw error if get upload URL fails", async () => {
+            mockFetch.mockResolvedValueOnce({
+                ok: false,
+                statusText: "Not Found",
+            } as Response);
+
+            await expect(service.uploadFile(mockFile, userId)).rejects.toThrow(
+                "Failed to get upload url: Not Found"
+            );
+        });
+
+        it("should throw error if S3 upload fails", async () => {
+            const uploadUrl = "https://fake-s3-url.com/upload";
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: async () => ({ url: uploadUrl, key: "file-key-123" }),
+            } as Response);
+
+            mockFetch.mockResolvedValueOnce({ ok: false, statusText: "Forbidden" } as Response);
+
+            await expect(service.uploadFile(mockFile, userId)).rejects.toThrow(
+                "Upload to S3 failed: Forbidden"
+            );
+        });
+
+        it("should throw error if create file info fails", async () => {
+            const uploadUrl = "https://fake-s3-url.com/upload";
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: async () => ({ url: uploadUrl, key: "file-key-123" }),
+            } as Response);
+
+            mockFetch.mockResolvedValueOnce({ ok: true } as Response);
+
+            mockFetch.mockResolvedValueOnce({ ok: false, statusText: "Conflict" } as Response);
+
+            await expect(service.uploadFile(mockFile, userId)).rejects.toThrow(
+                "Failed to create file info: Conflict"
+            );
+        });
+    });
+
+    describe("getFilesList", () => {
+        const userId = "user-uuid";
+        const fileList: FileInfoResponse = {
+            success: true,
+            message: "Retrieved files successfully",
+            files: [
+                {
+                    id: "file-uuid-1",
+                    key: "file-key-1",
+                    name: "file1.txt",
+                    mimetype: "text/plain",
+                    size: 100,
+                    userId,
+                    createdAt: new Date(),
+                },
+            ],
+        };
+
+        it("should return list of files successfully", async () => {
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: async () => fileList,
+            } as Response);
+
+            const result = await service.getFilesList(userId);
+
+            expect(result).toEqual(fileList);
+            expect(mockFetch).toHaveBeenCalledWith(`/api/files?userId=${encodeURIComponent(userId)}`, expect.any(Object));
+        });
+
+        it("should throw error if fetching files fails", async () => {
+            mockFetch.mockResolvedValueOnce({
+                ok: false,
+                statusText: "Unauthorized",
+            } as Response);
+
+            await expect(service.getFilesList(userId)).rejects.toThrow(
+                "Failed to get file list: Unauthorized"
+            );
+        });
+    });
 });
+
