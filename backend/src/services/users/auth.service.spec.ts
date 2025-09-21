@@ -51,7 +51,7 @@ describe('AuthService', () => {
 
       const result = await service.signIn(mockReq);
 
-      expect(mockUserRepo["findOne"]).toHaveBeenCalledWith({
+      expect(mockUserRepo['findOne']).toHaveBeenCalledWith({
         where: { email: 'test@test.com' },
       });
       expect(result.success).toBe(true);
@@ -96,10 +96,10 @@ describe('AuthService', () => {
 
       const result = await service.signUp(mockReq);
 
-      expect(mockUserRepo["findOneBy"]).toHaveBeenCalledWith({
+      expect(mockUserRepo['findOneBy']).toHaveBeenCalledWith({
         email: 'test@test.com',
       });
-      expect(mockUserRepo["save"]).toHaveBeenCalled();
+      expect(mockUserRepo['save']).toHaveBeenCalled();
       expect(result.success).toBe(true);
       expect(result.email).toBe('test@test.com');
     });
