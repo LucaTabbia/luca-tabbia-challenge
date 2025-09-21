@@ -7,7 +7,6 @@ export interface IAuthRequestDto {
 }
 
 export class AuthRequestDto implements IAuthRequestDto {
-
   @IsEmail()
   @Expose()
   email: string;

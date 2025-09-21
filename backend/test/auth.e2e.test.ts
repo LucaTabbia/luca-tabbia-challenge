@@ -153,7 +153,7 @@ describe('AuthController (E2E)', () => {
       .expect((res: Response) => {
         const body = res.body as BadRequestException;
         expect(body.message).toContain('email must be an email');
-      });;;
+      });
   });
 
   it('should reject short password', async () => {
@@ -163,7 +163,9 @@ describe('AuthController (E2E)', () => {
       .expect(HttpStatus.BAD_REQUEST)
       .expect((res: Response) => {
         const body = res.body as BadRequestException;
-        expect(body.message).toContain('password must be longer than or equal to 6 characters');
-      });;
+        expect(body.message).toContain(
+          'password must be longer than or equal to 6 characters',
+        );
+      });
   });
 });
